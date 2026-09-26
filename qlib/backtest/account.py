@@ -180,6 +180,12 @@ class Account:
     def get_cash(self) -> float:
         return self.current_position.get_cash()
 
+    def validate_executor(self, executor) -> None:
+        """Optional account/executor compatibility check before any trading."""
+
+    def start_bar(self, trade_start_time, trade_end_time, trade_exchange) -> None:
+        """Optional pre-decision accounting hook; ordinary accounts do nothing."""
+
     def _update_state_from_order(self, order: Order, trade_val: float, cost: float, trade_price: float) -> None:
         if self.is_port_metr_enabled():
             # update turnover

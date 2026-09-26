@@ -114,7 +114,7 @@ def create_account_instance(
     start_time: Union[pd.Timestamp, str],
     end_time: Union[pd.Timestamp, str],
     benchmark: Optional[str],
-    account: Union[float, int, dict],
+    account: Union[float, int, dict, Account],
     pos_type: str = "Position",
 ) -> Account:
     """
@@ -149,6 +149,9 @@ def create_account_instance(
     pos_type: str
         Postion type.
     """
+    # Opt-in account injection; existing numeric/dict callers are unchanged.
+    if isinstance(account, Account):
+        return account
     if isinstance(account, (int, float)):
         init_cash = account
         position_dict = {}
@@ -180,7 +183,7 @@ def get_strategy_executor(
     strategy: Union[str, dict, object, Path],
     executor: Union[str, dict, object, Path],
     benchmark: Optional[str] = "SH000300",
-    account: Union[float, int, dict] = 1e9,
+    account: Union[float, int, dict, Account] = 1e9,
     exchange_kwargs: dict = {},
     pos_type: str = "Position",
 ) -> Tuple[BaseStrategy, BaseExecutor]:
@@ -220,7 +223,7 @@ def backtest(
     strategy: Union[str, dict, object, Path],
     executor: Union[str, dict, object, Path],
     benchmark: str = "SH000300",
-    account: Union[float, int, dict] = 1e9,
+    account: Union[float, int, dict, Account] = 1e9,
     exchange_kwargs: dict = {},
     pos_type: str = "Position",
 ) -> Tuple[PORT_METRIC, INDICATOR_METRIC]:
@@ -243,12 +246,13 @@ def backtest(
         for initializing the outermost executor.
     benchmark: str
         the benchmark for reporting.
-    account : Union[float, int, Position]
+    account : Union[float, int, dict, Account]
         information for describing how to create the account
         For `float` or `int`:
             Using Account with only initial cash
-        For `Position`:
-            Using Account with a Position
+        For `Account`:
+            Reuse the supplied account and its own benchmark configuration.
+            This enables opt-in account subclasses without changing numeric defaults.
     exchange_kwargs : dict
         the kwargs for initializing Exchange
     pos_type : str

@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {"initial_free_cash": "100000", "events": [
+      {"fill": ["S", "-36500", "1", "0"], "expected": {"free_cash": "100000", "restricted_total": "36500", "equity": "100000", "positions": {"S": "-36500"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+      {"mark": {"S": "1"}, "expected": {"free_cash": "100000", "restricted_total": "36500", "equity": "100000", "positions": {"S": "-36500"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+      {"borrow": "3", "expected": {"free_cash": "99998.8", "restricted_total": "36500", "equity": "99998.8", "positions": {"S": "-36500"}, "financing_cost": "1.2", "transaction_cost": "0", "funding_shortfall": "0"}},
+      {"fill": ["S", "36500", "1", "0"], "expected": {"free_cash": "99998.8", "restricted_total": "0", "equity": "99998.8", "positions": {}, "financing_cost": "1.2", "transaction_cost": "0", "funding_shortfall": "0"}}
+    ]},
+    {"initial_free_cash": "1", "events": [
+      {"fill": ["S", "-100", "1", "0"], "expected": {"free_cash": "1", "restricted_total": "100", "equity": "1", "positions": {"S": "-100"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+      {"mark": {"S": "100"}, "expected": {"free_cash": "1", "restricted_total": "100", "equity": "-9899", "positions": {"S": "-100"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+      {"borrow": "365", "expected": {"free_cash": "-39", "restricted_total": "100", "equity": "-9939", "positions": {"S": "-100"}, "financing_cost": "40", "transaction_cost": "0", "funding_shortfall": "39"}},
+      {"mark": {"S": "50"}, "expected": {"free_cash": "-39", "restricted_total": "100", "equity": "-4939", "positions": {"S": "-100"}, "financing_cost": "40", "transaction_cost": "0", "funding_shortfall": "39"}}
+    ]}
+  ]
+}

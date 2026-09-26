@@ -80,12 +80,18 @@ def collect_data_loop(
     object
         trade decision
     """
+    trade_executor.trade_account.validate_executor(trade_executor)
     trade_executor.reset(start_time=start_time, end_time=end_time)
     trade_strategy.reset(level_infra=trade_executor.get_level_infra())
 
     with tqdm(total=trade_executor.trade_calendar.get_trade_len(), desc="backtest loop") as bar:
         _execute_result = None
         while not trade_executor.finished():
+            # Charges based on the prior close must precede strategy sizing,
+            # including sessions with no orders. Default Account is a no-op.
+            trade_executor.trade_account.start_bar(
+                *trade_executor.trade_calendar.get_step_time(), trade_executor.trade_exchange
+            )
             _trade_decision: BaseTradeDecision = trade_strategy.generate_trade_decision(_execute_result)
             _execute_result = yield from trade_executor.collect_data(_trade_decision, level=0)
             trade_strategy.post_exe_step(_execute_result)

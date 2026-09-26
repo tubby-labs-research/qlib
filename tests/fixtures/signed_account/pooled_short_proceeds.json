@@ -1,0 +1,11 @@
+{
+  "initial_free_cash": "1000",
+  "events": [
+    {"fill": ["S", "-4", "10", "0"], "expected": {"free_cash": "1000", "restricted_total": "40", "equity": "1000", "positions": {"S": "-4"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+    {"fill": ["S", "-6", "20", "0"], "expected": {"free_cash": "1000", "restricted_total": "160", "equity": "960", "positions": {"S": "-10"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+    {"mark": {"S": "15"}, "expected": {"free_cash": "1000", "restricted_total": "160", "equity": "1010", "positions": {"S": "-10"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+    {"fill": ["S", "5", "15", "0"], "expected": {"free_cash": "1005", "restricted_total": "80", "equity": "1010", "positions": {"S": "-5"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+    {"mark": {"S": "12"}, "expected": {"free_cash": "1005", "restricted_total": "80", "equity": "1025", "positions": {"S": "-5"}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}},
+    {"fill": ["S", "5", "12", "0"], "expected": {"free_cash": "1025", "restricted_total": "0", "equity": "1025", "positions": {}, "financing_cost": "0", "transaction_cost": "0", "funding_shortfall": "0"}}
+  ]
+}
