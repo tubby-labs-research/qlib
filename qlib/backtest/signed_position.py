@@ -143,6 +143,13 @@ class SignedPosition(Position):
     def get_total_cash(self) -> float:
         return self.get_cash() + sum(self.restricted_proceeds.values())
 
+    def value_touched_by(self, stock_id: str) -> float:
+        """Equity terms one fill of ``stock_id`` can change: free cash, that instrument's
+        restricted proceeds and its marked value. Every other holding is untouched."""
+        entry = self.position.get(stock_id)
+        held = entry["amount"] * entry["price"] if isinstance(entry, dict) else 0.0
+        return self.position["cash"] + self.restricted_proceeds.get(stock_id, 0.0) + held
+
     def calculate_value(self) -> float:
         value = self.get_total_cash() + self.calculate_stock_value()
         if not math.isfinite(value):

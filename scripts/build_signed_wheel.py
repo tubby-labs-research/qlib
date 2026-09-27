@@ -22,7 +22,10 @@ import zipfile
 
 BASE_COMMIT = "da920b7f954f48ab1bb64117c976710de198373e"
 BASE_VERSION = "0.9.7"
-VERSION = "0.9.7+tubby.1"
+VERSION = "0.9.7+tubby.2"
+# ZipInfo records the creating OS (0 on Windows, 3 elsewhere); fixing it makes a wheel built on any
+# platform byte-identical, so one pinned digest verifies on Windows and macOS alike.
+CREATE_SYSTEM = 3
 DIST = "pyqlib"
 FIXED_TIME = (1980, 1, 1, 0, 0, 0)
 
@@ -91,7 +94,7 @@ def source_overlay(root: Path, allow_dirty: bool) -> tuple[dict[str, bytes], str
     init = overlay.get("qlib/__init__.py")
     if init is None:
         raise ValueError("qlib/__init__.py must set the derivative version")
-    if not re.search(rb'^__version__\s*=\s*[\'\"]0\.9\.7\+tubby\.1[\'\"]', init, re.M):
+    if not re.search(rb'^__version__\s*=\s*[\'\"]' + re.escape(VERSION.encode()) + rb'[\'\"]', init, re.M):
         raise ValueError("qlib/__init__.py version does not match derivative wheel")
     return overlay, commit, dirty
 
@@ -194,6 +197,7 @@ def build(root: Path, base_wheel: Path, base_sha256: str, output_dir: Path, allo
             for name, data in sorted(renamed.items()):
                 info = zipfile.ZipInfo(name, FIXED_TIME)
                 info.compress_type = zipfile.ZIP_DEFLATED
+                info.create_system = CREATE_SYSTEM
                 info.external_attr = renamed_attrs.get(name, 0o100644 << 16)
                 wheel.writestr(info, data, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
         os.link(temp_name, destination)  # Atomic creation; never replaces an existing wheel.
