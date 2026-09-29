@@ -45,7 +45,7 @@ class SignedBuildTests(unittest.TestCase):
 
     def test_build_preserves_native_rebuilds_record_and_refuses_collision(self):
         wheel, digest = self.base_wheel()
-        overlay = {"qlib/__init__.py": b'__version__ = "0.9.7+tubby.1"\n'}
+        overlay = {"qlib/__init__.py": f'__version__ = "{builder.VERSION}"\n'.encode()}
         output = self.root / "out"
         with mock.patch.object(builder, "source_overlay", return_value=(overlay, "a" * 40, False)), mock.patch.object(
             builder, "run_git", return_value=b"MIT license\n"
@@ -57,15 +57,17 @@ class SignedBuildTests(unittest.TestCase):
             names = archive.namelist()
             self.assertEqual(names, sorted(names))
             self.assertEqual(archive.read("qlib/data/_libs/rolling.cp312-win_amd64.pyd"), b"native-data")
-            prefix = "pyqlib-0.9.7+tubby.1.dist-info/"
+            prefix = f"pyqlib-{builder.VERSION}.dist-info/"
             self.assertIn(prefix + "licenses/LICENSE", names)
-            self.assertIn(b"Version: 0.9.7+tubby.1", archive.read(prefix + "METADATA"))
+            self.assertIn(f"Version: {builder.VERSION}".encode(), archive.read(prefix + "METADATA"))
             manifest = json.loads(archive.read("qlib/_tubby_build.json"))
             self.assertEqual(manifest["native_sha256"]["qlib/data/_libs/rolling.cp312-win_amd64.pyd"], hashlib.sha256(b"native-data").hexdigest())
             rows = list(csv.reader(io.StringIO(archive.read(prefix + "RECORD").decode())))
             self.assertEqual({row[0] for row in rows}, set(names))
             self.assertEqual(rows[-1], [prefix + "RECORD", "", ""])
             self.assertTrue(all(info.date_time == builder.FIXED_TIME for info in archive.infolist()))
+            # The creating-OS field is fixed, so Windows and macOS builds are byte-identical.
+            self.assertTrue(all(info.create_system == builder.CREATE_SYSTEM for info in archive.infolist()))
 
     def test_dirty_and_native_source_change_rejected(self):
         repo = self.root / "source"

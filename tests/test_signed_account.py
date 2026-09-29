@@ -146,6 +146,24 @@ class SignedAccountTests(unittest.TestCase):
         self.assertAlmostEqual(monday.net_return, (-10 - borrow) / 1000)
         self.assertAlmostEqual(monday["return"], -10 / 1000)
 
+    def test_per_order_return_equals_full_book_revaluation(self):
+        # update_order measures each fill on the terms it can change; over a mixed sequence of opens,
+        # adds, partial covers, flips and closes the booked return must equal full revaluations.
+        account = SignedAccount(init_cash=100_000)
+        venue = exchange()
+        account.start_bar(FRIDAY, FRIDAY, venue)
+        position = account.current_position
+        steps = [("A", 30, 10.0), ("B", -40, 25.0), ("C", 12, 7.5), ("A", 15, 10.5), ("B", 10, 24.0),
+                 ("C", -20, 7.0), ("D", -5, 101.0), ("B", 30, 23.0), ("A", -45, 11.0), ("D", 5, 99.0)]
+        for code, shares, price in steps:
+            with self.subTest(code=code, shares=shares):
+                before_return = account.accum_info.get_return
+                before_equity = position.calculate_value()
+                cost = abs(shares * price) * 0.0005
+                fill(account, FRIDAY, code, shares, price)
+                self.assertAlmostEqual(account.accum_info.get_return - before_return,
+                                       position.calculate_value() - before_equity + cost, places=9)
+
     def test_mixed_book_reports_long_and_short_values_against_net_equity(self):
         account = SignedAccount(init_cash=1000)
         venue = exchange({(FRIDAY, "L"): 12, (FRIDAY, "S"): 8})

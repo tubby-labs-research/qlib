@@ -7,7 +7,8 @@ market neutrality. Ordinary Qlib accounts and strategies remain unchanged.
 ## Identity and patch boundary
 
 - Upstream: Microsoft Qlib v0.9.7, `da920b7f954f48ab1bb64117c976710de198373e`.
-- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.1`.
+- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.2` (tubby.1 plus the
+  changes listed under *Versions* below; accounting results are unchanged).
 - MIT notices remain in place. This repository contains generic framework code,
   synthetic fixtures and tests, not private strategies, portfolios or market data.
 - Core hooks: accept an `Account` instance through public backtest configuration;
@@ -117,3 +118,13 @@ Review changes against the pinned upstream baseline. Rebase or remove the hooks
 only after equivalent upstream behavior passes these fixtures. Keep old builds
 and manifests identifiable; never patch installed site-packages as a hidden fix.
 This checkpoint does not install the derivative into any existing application.
+
+## Versions
+
+- `0.9.7+tubby.2` (2026-09-27): `SignedAccount.update_order` measures each fill on the equity
+  terms it can change (free cash, that instrument's restricted proceeds and marked value)
+  instead of revaluing every holding twice per order, which made a thousand-name session
+  quadratic. TOP3000 signed runs are 1.7-2.1x faster with identical ledgers, positions and
+  metrics. The wheel builder fixes the ZIP creating-OS field, so Windows and macOS builds of
+  the same commit are byte-identical.
+- `0.9.7+tubby.1` (2026-09-26): opt-in daily signed accounting and restricted short proceeds.

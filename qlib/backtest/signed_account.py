@@ -80,11 +80,17 @@ class SignedAccount(Account):
         if pd.Timestamp(order.start_time).normalize() != self._active_session:
             raise ValueError("order date differs from active signed session")
         position = self.current_position
-        before = position.calculate_value()
+        # A fill changes only free cash, this instrument's restricted proceeds and its value, so the
+        # equity change is measured on those terms. Revaluing the whole book per order made a session
+        # with thousands of orders quadratic in the number of holdings.
+        before = position.value_touched_by(order.stock_id)
         position.update_order(order, trade_val, cost, trade_price)
+        after = position.value_touched_by(order.stock_id)
+        if not math.isfinite(after):
+            raise ValueError("account equity exceeds finite ledger range")
         self.accum_info.add_cost(cost)
         self.accum_info.add_turnover(trade_val)
-        self.accum_info.add_return_value(position.calculate_value() - before + cost)
+        self.accum_info.add_return_value(after - before + cost)
 
     def update_current_position(self, trade_start_time, trade_end_time, trade_exchange):
         position = self.current_position
