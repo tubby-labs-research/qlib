@@ -21,5 +21,6 @@ jobs:
       - name: Test installed derivative outside its source checkout
         working-directory: ${{ runner.temp }}
         run: |
-          python -c "import qlib; assert qlib.__version__ == '0.9.7+tubby.2'; print(qlib.__file__)"
+          python -c "import qlib; assert qlib.__version__ == '0.9.7+tubby.3'; print(qlib.__file__)"
           python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -p 'test_signed_*.py'
+          python -m unittest discover -s "$GITHUB_WORKSPACE/tests" -p 'test_executor_day_cache.py'
