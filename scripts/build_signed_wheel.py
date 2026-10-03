@@ -22,7 +22,7 @@ import zipfile
 
 BASE_COMMIT = "da920b7f954f48ab1bb64117c976710de198373e"
 BASE_VERSION = "0.9.7"
-VERSION = "0.9.7+tubby.2"
+VERSION = "0.9.7+tubby.3"
 # ZipInfo records the creating OS (0 on Windows, 3 elsewhere); fixing it makes a wheel built on any
 # platform byte-identical, so one pinned digest verifies on Windows and macOS alike.
 CREATE_SYSTEM = 3
