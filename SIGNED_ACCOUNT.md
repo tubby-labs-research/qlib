@@ -7,8 +7,8 @@ market neutrality. Ordinary Qlib accounts and strategies remain unchanged.
 ## Identity and patch boundary
 
 - Upstream: Microsoft Qlib v0.9.7, `da920b7f954f48ab1bb64117c976710de198373e`.
-- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.3` (tubby.2 plus the
-  guarded executor day cache listed under *Versions* below).
+- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.4` (tubby.3 plus the
+  opt-in executor hook listed under *Versions* below).
 - MIT notices remain in place. This repository contains generic framework code,
   synthetic fixtures and tests, not private strategies, portfolios or market data.
 - Core hooks: accept an `Account` instance through public backtest configuration;
@@ -17,6 +17,13 @@ market neutrality. Ordinary Qlib accounts and strategies remain unchanged.
   for repeated identical, timezone-naive native Pandas Timestamps; calendar calls,
   order iteration and fill accounting retain their existing sequence. Custom
   time objects and timezone-aware values retain per-order floor calls.
+- Additional tubby.4 hook: `SimulatorExecutor(order_batch_executor=...)` accepts
+  a handler with callable `try_collect(executor, trade_decision)`. Returning
+  `NotImplemented` before any mutation retains the native loop; a successful
+  handler owns the complete operation and returns `(fills, {"trade_info": fills})`.
+  Handler errors propagate. Eligibility guards, including trade type and verbosity,
+  belong to the handler. The default is `None`; this fork supplies the generic
+  boundary, not a compiled fill implementation or private runtime components.
 - Opt-in components: `qlib.backtest.signed_position.SignedPosition`,
   `qlib.backtest.signed_exchange.SignedExchange`,
   `qlib.backtest.signed_account.SignedAccount`, and
@@ -93,6 +100,9 @@ the checkout so an uncompiled source directory cannot shadow the installed wheel
 Also run `python -m unittest discover -s <checkout>/tests -p "test_executor_day_cache.py"`
 against that installed derivative. The CI workflow checks the installed version
 and runs these suites outside the source checkout.
+For tubby.4, also run
+`python -m unittest discover -s <checkout>/tests -p "test_executor_order_batch.py"`
+for the additional dispatch, fallback and error-propagation boundary.
 
 On Windows without MSVC, `scripts/build_signed_wheel.py` offers a narrowly scoped
 binary-preserving build. Download the matching **official pyqlib 0.9.7 wheel**
@@ -146,6 +156,11 @@ bytes. Merging source is not installation or an automatic runtime upgrade.
 
 ## Versions
 
+- `0.9.7+tubby.4`: adds only the opt-in generic `order_batch_executor` boundary
+  on top of tubby.3. `test_executor_order_batch.py` covers default/native behavior,
+  mutation-free decline, successful result identity, error propagation and
+  constructor validation. A supplied handler needs its own accounting and
+  compatibility validation; these dispatch fixtures do not certify its fills.
 - `0.9.7+tubby.3`: adds the guarded, per-collection native executor day-floor
   cache. `test_executor_day_cache.py` covers native/reference equivalence,
   calendar calls, day resets, partial fills and fallback time objects. This

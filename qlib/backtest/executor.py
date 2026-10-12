@@ -536,6 +536,7 @@ class SimulatorExecutor(BaseExecutor):
         track_data: bool = False,
         common_infra: CommonInfrastructure | None = None,
         trade_type: str = TT_SERIAL,
+        order_batch_executor: Any = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -543,7 +544,15 @@ class SimulatorExecutor(BaseExecutor):
         ----------
         trade_type: str
             please refer to the doc of `TT_SERIAL` & `TT_PARAL`
+        order_batch_executor: object, optional
+            Opt-in handler with callable ``try_collect(executor, trade_decision)``.
+            Return the native ``(fills, {"trade_info": fills})`` result, or
+            ``NotImplemented`` before mutating orders, account, calendar or executor
+            bookkeeping. Handlers own eligibility guards (including trade type and
+            verbosity) and the complete successful operation; errors propagate.
         """
+        if order_batch_executor is not None and not callable(getattr(order_batch_executor, "try_collect", None)):
+            raise TypeError("order_batch_executor must provide callable try_collect")
         super(SimulatorExecutor, self).__init__(
             time_per_step=time_per_step,
             start_time=start_time,
@@ -557,6 +566,7 @@ class SimulatorExecutor(BaseExecutor):
         )
 
         self.trade_type = trade_type
+        self._order_batch_executor = order_batch_executor
 
     def _get_order_iterator(self, trade_decision: BaseTradeDecision) -> List[Order]:
         """
@@ -588,6 +598,11 @@ class SimulatorExecutor(BaseExecutor):
         return order_it
 
     def _collect_data(self, trade_decision: BaseTradeDecision, level: int = 0) -> Tuple[List[object], dict]:
+        handler = getattr(self, "_order_batch_executor", None)
+        if handler is not None:
+            result = handler.try_collect(self, trade_decision)
+            if result is not NotImplemented:
+                return result
         trade_start_time, _ = self.trade_calendar.get_step_time()
         execute_result: list = []
         cached_start_time = None
