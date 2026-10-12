@@ -590,11 +590,25 @@ class SimulatorExecutor(BaseExecutor):
     def _collect_data(self, trade_decision: BaseTradeDecision, level: int = 0) -> Tuple[List[object], dict]:
         trade_start_time, _ = self.trade_calendar.get_step_time()
         execute_result: list = []
+        cached_start_time = None
+        cached_deal_day = None
 
         for order in self._get_order_iterator(trade_decision):
             # Each time we move into a new date, clear `self.dealt_order_amount` since it only maintains intraday
             # information.
-            now_deal_day = self.trade_calendar.get_step_time()[0].floor(freq="D")
+            step_start_time = self.trade_calendar.get_step_time()[0]
+            # Native naive Timestamps are immutable. Reuse their day only while the
+            # identical object recurs in this call; calendars still run per order.
+            # Custom time objects and timezone-aware values retain their own floor
+            # calls, including any side effects or timezone handling.
+            if cached_start_time is not None and step_start_time is cached_start_time:
+                now_deal_day = cached_deal_day
+            else:
+                now_deal_day = step_start_time.floor(freq="D")
+                cached_start_time = (
+                    step_start_time if type(step_start_time) is pd.Timestamp and step_start_time.tz is None else None
+                )
+                cached_deal_day = now_deal_day
             if self.deal_day is None or now_deal_day > self.deal_day:
                 self.dealt_order_amount = defaultdict(float)
                 self.deal_day = now_deal_day
