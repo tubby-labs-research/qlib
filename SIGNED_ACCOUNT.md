@@ -1,4 +1,4 @@
-# Opt-in signed daily accounting — v1
+# Opt-in signed daily accounting — contract v1
 
 Use when building, testing or extending this derivative's signed-position mode.
 It is a restricted research simulation, not a broker margin model or a claim of
@@ -7,13 +7,23 @@ market neutrality. Ordinary Qlib accounts and strategies remain unchanged.
 ## Identity and patch boundary
 
 - Upstream: Microsoft Qlib v0.9.7, `da920b7f954f48ab1bb64117c976710de198373e`.
-- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.2` (tubby.1 plus the
-  changes listed under *Versions* below; accounting results are unchanged).
+- Derivative: `tubby-labs-research/qlib`, version `0.9.7+tubby.4` (tubby.3 plus the
+  opt-in executor hook listed under *Versions* below).
 - MIT notices remain in place. This repository contains generic framework code,
   synthetic fixtures and tests, not private strategies, portfolios or market data.
 - Core hooks: accept an `Account` instance through public backtest configuration;
   call its compatibility check and pre-decision bar hook. Both hooks are no-ops
-  for an ordinary account. No executor algorithm was replaced.
+  for an ordinary account. The native executor also caches day floors locally
+  for repeated identical, timezone-naive native Pandas Timestamps; calendar calls,
+  order iteration and fill accounting retain their existing sequence. Custom
+  time objects and timezone-aware values retain per-order floor calls.
+- Additional tubby.4 hook: `SimulatorExecutor(order_batch_executor=...)` accepts
+  a handler with callable `try_collect(executor, trade_decision)`. Returning
+  `NotImplemented` before any mutation retains the native loop; a successful
+  handler owns the complete operation and returns `(fills, {"trade_info": fills})`.
+  Handler errors propagate. Eligibility guards, including trade type and verbosity,
+  belong to the handler. The default is `None`; this fork supplies the generic
+  boundary, not a compiled fill implementation or private runtime components.
 - Opt-in components: `qlib.backtest.signed_position.SignedPosition`,
   `qlib.backtest.signed_exchange.SignedExchange`,
   `qlib.backtest.signed_account.SignedAccount`, and
@@ -87,6 +97,12 @@ With a suitable C++ compiler, the ordinary source build remains available:
 Build/install in a separate environment, then run the signed tests from outside
 the checkout so an uncompiled source directory cannot shadow the installed wheel:
 `python -m unittest discover -s <checkout>/tests -p "test_signed_*.py"`.
+Also run `python -m unittest discover -s <checkout>/tests -p "test_executor_day_cache.py"`
+against that installed derivative. The CI workflow checks the installed version
+and runs these suites outside the source checkout.
+For tubby.4, also run
+`python -m unittest discover -s <checkout>/tests -p "test_executor_order_batch.py"`
+for the additional dispatch, fallback and error-propagation boundary.
 
 On Windows without MSVC, `scripts/build_signed_wheel.py` offers a narrowly scoped
 binary-preserving build. Download the matching **official pyqlib 0.9.7 wheel**
@@ -119,8 +135,36 @@ only after equivalent upstream behavior passes these fixtures. Keep old builds
 and manifests identifiable; never patch installed site-packages as a hidden fix.
 This checkpoint does not install the derivative into any existing application.
 
+### Source review and merge order
+
+Review [PR #3](https://github.com/tubby-labs-research/qlib/pull/3) independently
+against `tubby-v0.9.7`, then review
+[PR #4](https://github.com/tubby-labs-research/qlib/pull/4) as its small additional
+executor hook. PR #4 should descend from the actual reviewed PR #3 head; carry
+forward PR #3's preparation changes before completing PR #4 review.
+Merge PR #3 into `tubby-v0.9.7` first. Then retarget PR #4 to `tubby-v0.9.7`,
+review the resulting diff and run checks on that retargeted revision before
+human peer merge. Do not merge PR #4 first into `codex/executor-day-cache`.
+CI covers pull requests targeting either base; triggering CI is not a passing
+result. Record current Linux CI and installed Windows suite results against the
+exact reviewed commits before merge; this document does not assert new results.
+
+Prefer history-preserving merges and keep source history and deployed pinned
+commits reachable. Stable deployed users stay pinned until an explicit upgrade
+is built and verified, including installed package identity and patched source
+bytes. Merging source is not installation or an automatic runtime upgrade.
+
 ## Versions
 
+- `0.9.7+tubby.4`: adds only the opt-in generic `order_batch_executor` boundary
+  on top of tubby.3. `test_executor_order_batch.py` covers default/native behavior,
+  mutation-free decline, successful result identity, error propagation and
+  constructor validation. A supplied handler needs its own accounting and
+  compatibility validation; these dispatch fixtures do not certify its fills.
+- `0.9.7+tubby.3`: adds the guarded, per-collection native executor day-floor
+  cache. `test_executor_day_cache.py` covers native/reference equivalence,
+  calendar calls, day resets, partial fills and fallback time objects. This
+  version has no `order_batch_executor` hook or compiled fill implementation.
 - `0.9.7+tubby.2` (2026-09-27): `SignedAccount.update_order` measures each fill on the equity
   terms it can change (free cash, that instrument's restricted proceeds and marked value)
   instead of revaluing every holding twice per order, which made a thousand-name session
