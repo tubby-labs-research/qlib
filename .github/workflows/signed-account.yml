@@ -1,7 +1,7 @@
 name: Signed account offline checks
 on:
   pull_request:
-    branches: [tubby-v0.9.7]
+    branches: [tubby-v0.9.7, codex/executor-day-cache]
 permissions:
   contents: read
 jobs:
